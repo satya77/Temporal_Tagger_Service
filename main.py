@@ -126,37 +126,30 @@ class TimeTag(Resource):
         if date:
             cache["heideltime"].set_document_time(date)
 
-        annotated_texts=[]
-        for text in texts:
-            doc=cache["heideltime"].parse(text)
-            doc = doc.replace('<?xml version="1.0"?>\n<!DOCTYPE TimeML SYSTEM "TimeML.dtd">\n<TimeML>\n', '')
-            doc = doc.replace('\n</TimeML>\n\n', '')
-            annotated_texts.append(doc)
-        return annotated_texts
+        doc=cache["heideltime"].parse('\n'.join(texts))
+        doc = doc.replace('<?xml version="1.0"?>\n<!DOCTYPE TimeML SYSTEM "TimeML.dtd">\n<TimeML>\n', '')
+        doc = doc.replace('\n</TimeML>\n\n', '')
+        return doc
 
     @staticmethod
     @lru_cache(maxsize=24)
     def sutime_prediction(texts,processed_date=None):
         if processed_date:
             reference_date = datetime.strptime(processed_date, '%Y-%M-%d')
-        annotated_texts=[]
-        for text in texts:
-            if processed_date:
-                json_doc=cache["sutime"].parse(text, reference_date.isoformat())
+            json_doc=cache["sutime"].parse('\n'.join(texts), reference_date.isoformat())
+        else:
+            json_doc=cache["sutime"].parse('\n'.join(texts))
+        pervious_end=0
+        new_text=""
+        for annotation in json_doc:
+            if "timex-value" in annotation:
+                annotation_format='<TIMEX3 type="{}" value="{}" >{}</TIMEX3>'.format(annotation["type"], annotation["timex-value"],annotation["text"])
             else:
-                json_doc=cache["sutime"].parse(text)
-            pervious_end=0
-            new_text=""
-            for annotation in json_doc:
-                if "timex-value" in annotation:
-                    annotation_format='<TIMEX3 type="{}" value="{}" >{}</TIMEX3>'.format(annotation["type"], annotation["timex-value"],annotation["text"])
-                else:
-                    annotation_format='<TIMEX3 type="{}" >{}</TIMEX3>'.format(annotation["type"], annotation["text"])
-                new_text=new_text+ text[pervious_end:annotation["start"]]+annotation_format
-                pervious_end=annotation["end"]
-            new_text=new_text+text[pervious_end:]
-            annotated_texts.append(new_text)
-        return annotated_texts
+                annotation_format='<TIMEX3 type="{}" >{}</TIMEX3>'.format(annotation["type"], annotation["text"])
+            new_text=new_text+ texts[pervious_end:annotation["start"]]+annotation_format
+            pervious_end=annotation["end"]
+        new_text=new_text+texts[pervious_end:]
+        return new_text
 
 
     @staticmethod
