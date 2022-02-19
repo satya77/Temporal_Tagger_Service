@@ -60,7 +60,11 @@ class TimeTag(Resource):
         input_texts = tuple(args["input"].split("\n"))
         annotated_texts = self.annotate_texts(input_texts, args)
 
-        return {"tagged_text": "\n".join(annotated_texts)}, 200
+         if isinstance(annotated_texts, list):
+
+            return {"tagged_text": "\n".join(annotated_texts)}, 200
+        else:
+            return {"tagged_text": annotated_texts}, 200
 
     def annotate_texts(self, texts, args):
         annotated_texts = []
@@ -133,12 +137,13 @@ class TimeTag(Resource):
 
     @staticmethod
     @lru_cache(maxsize=24)
-    def sutime_prediction(texts,processed_date=None):
+    ddef sutime_prediction(texts,processed_date=None):
+        compelete_text='\n'.join(texts)
         if processed_date:
             reference_date = datetime.strptime(processed_date, '%Y-%M-%d')
-            json_doc=cache["sutime"].parse('\n'.join(texts), reference_date.isoformat())
+            json_doc=cache["sutime"].parse('\n'.join(compelete_text), reference_date.isoformat())
         else:
-            json_doc=cache["sutime"].parse('\n'.join(texts))
+            json_doc=cache["sutime"].parse(compelete_text)
         pervious_end=0
         new_text=""
         for annotation in json_doc:
@@ -146,9 +151,9 @@ class TimeTag(Resource):
                 annotation_format='<TIMEX3 type="{}" value="{}" >{}</TIMEX3>'.format(annotation["type"], annotation["timex-value"],annotation["text"])
             else:
                 annotation_format='<TIMEX3 type="{}" >{}</TIMEX3>'.format(annotation["type"], annotation["text"])
-            new_text=new_text+ texts[pervious_end:annotation["start"]]+annotation_format
+            new_text=new_text+ compelete_text[pervious_end:annotation["start"]]+annotation_format
             pervious_end=annotation["end"]
-        new_text=new_text+texts[pervious_end:]
+        new_text=new_text+compelete_text[pervious_end:]
         return new_text
 
 
@@ -198,10 +203,6 @@ class TimeTag(Resource):
 
 api.add_resource(TimeTag, "/time_tag")  # add endpoints
 
-@app.before_request
-def limit_remote_addr():
-    if request.remote_addr not in ['129.206.61.24','129.206.61.70']:
-        abort(403)  # Forbidden
 
 if __name__ == "__main__":
     parser = ArgumentParser()
