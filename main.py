@@ -27,23 +27,23 @@ api = Api(app)
 print("Caching models...")
 cache = {}
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
-cache["classifier_with_date"] = BERTWithDateLayerTokenClassification.from_pretrained(
+cache["Classifier_DATE_EN"] = BERTWithDateLayerTokenClassification.from_pretrained(
     "satyaalmasian/temporal_tagger_DATEBERT_tokenclassifier").to(device)
 cache["date_tokenizer"] = NumBertTokenizer("./temporal_models/vocab_date.txt")
-cache["classifier_base"] = BertForTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_BERT_tokenclassifier").to(device)
-cache["classifier_crf"] = BERT_CRF_NER.from_pretrained("satyaalmasian/temporal_tagger_BERTCRF_tokenclassifier").to(device)
-cache["classifier_tokenizer"] = AutoTokenizer.from_pretrained("satyaalmasian/temporal_tagger_BERT_tokenclassifier",
+cache["Classifier_EN"] = BertForTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_BERT_tokenclassifier").to(device)
+cache["Classifier_CRF_EN"] = BERT_CRF_NER.from_pretrained("satyaalmasian/temporal_tagger_BERTCRF_tokenclassifier").to(device)
+cache["Classifier_tokenizer"] = AutoTokenizer.from_pretrained("satyaalmasian/temporal_tagger_BERT_tokenclassifier",
                                                               use_fast=False)
-cache["id2label"] = {v: k for k, v in cache["classifier_base"].config.label2id.items()}
+cache["id2label"] = {v: k for k, v in cache["Classifier_EN"].config.label2id.items()}
 cache["tokenizer_roberta"] = AutoTokenizer.from_pretrained("satyaalmasian/temporal_tagger_roberta2roberta")
 cache["seq2seq_roberta"] = EncoderDecoderModel.from_pretrained("satyaalmasian/temporal_tagger_roberta2roberta").to(device)
 cache["tokenizer_bert"] = AutoTokenizer.from_pretrained("satyaalmasian/temporal_tagger_bert2bert")
 cache["seq2seq_bert"] = EncoderDecoderModel.from_pretrained("satyaalmasian/temporal_tagger_bert2bert").to(device)
 
-cache["classifier_german"] = AutoModelForTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_German_GELECTRA").to(device)
-cache["classifier_german_tokenizer"] = AutoTokenizer.from_pretrained("satyaalmasian/temporal_tagger_German_GELECTRA", use_fast=False)
-cache["heideltime"] = Heideltime()
-cache["sutime"]= SUTime(mark_time_ranges=True, include_range=True)
+cache["Classifier_DE"] = AutoModelForTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_German_GELECTRA").to(device)
+cache["Classifier_DE_tokenizer"] = AutoTokenizer.from_pretrained("satyaalmasian/temporal_tagger_German_GELECTRA", use_fast=False)
+cache["HeidelTime"] = Heideltime()
+cache["SUTime"]= SUTime(mark_time_ranges=True, include_range=True)
 
 
 class TimeTag(Resource):
@@ -59,18 +59,17 @@ class TimeTag(Resource):
         # Force as tuple to allow for LRU cache
         input_texts = tuple(args["input"].split("\n"))
         annotated_texts = self.annotate_texts(input_texts, args)
-
-         if isinstance(annotated_texts, list):
+        if isinstance(annotated_texts, list):
 
             return {"tagged_text": "\n".join(annotated_texts)}, 200
         else:
             return {"tagged_text": annotated_texts}, 200
 
+
     def annotate_texts(self, texts, args):
-        annotated_texts = []
-        if args["model_type"].startswith("classifier"):
+        if args["model_type"].startswith("Classifier"):
             classifier_type = args["model_type"].split("_")[1]
-            if classifier_type == "date":
+            if classifier_type == "DATE":
                 if args["date"] is None:
                     return {"For the dateBERT model you need to specify a reference date."}, 409
 
@@ -86,11 +85,11 @@ class TimeTag(Resource):
             seq2seq_type = args["model_type"].split("_")[1]
             return self.seq2seq_prediction(texts, seq2seq_type, args["model_type"])
 
-        if args["model_type"].startswith("heideltime"):
+        if args["model_type"].startswith("HeidelTime"):
             heideltime_lang = args["model_type"].split("_")[1]
             heideltime_mode = args["model_type"].split("_")[2]
-            return self.heideltime_prediction(texts, heideltime_lang,heideltime_mode, args["date"])
-        if args["model_type"].startswith("sutime"):
+            return self.heideltime_prediction(texts, heideltime_lang, heideltime_mode, args["date"])
+        if args["model_type"].startswith("SUTime"):
             return self.sutime_prediction(texts, args["date"])
 
 
@@ -118,32 +117,32 @@ class TimeTag(Resource):
 
     @staticmethod
     @lru_cache(maxsize=24)
-    def heideltime_prediction(texts, heideltime_lang,heideltime_mode,date):
+    def heideltime_prediction(texts, heideltime_lang, heideltime_mode,date):
         # NARRATIVES, NEWS, COLLOQUIAL and SCIENTIFIC.
-        lang ="ENGLISH" if heideltime_lang=="en" else "GERMAN"
-        if heideltime_mode=="COLLOQUIAL" and heideltime_lang=="en":
+        lang ="ENGLISH" if heideltime_lang=="EN" else "GERMAN"
+        if heideltime_mode=="COLLOQUIAL" and heideltime_lang=="EN":
             lang="ENGLISHCOLL"
-        if heideltime_mode=="SCIENTIFIC" and heideltime_lang=="en":
+        if heideltime_mode=="SCIENTIFIC" and heideltime_lang=="EN":
             lang="ENGLISHSCI"
-        cache["heideltime"].set_document_type(heideltime_mode)
-        cache["heideltime"].set_language(lang)
+        cache["HeidelTime"].set_document_type(heideltime_mode)
+        cache["HeidelTime"].set_language(lang)
         if date:
-            cache["heideltime"].set_document_time(date)
+            cache["HeidelTime"].set_document_time(date)
 
-        doc=cache["heideltime"].parse('\n'.join(texts))
+        doc=cache["HeidelTime"].parse('\n'.join(texts))
         doc = doc.replace('<?xml version="1.0"?>\n<!DOCTYPE TimeML SYSTEM "TimeML.dtd">\n<TimeML>\n', '')
         doc = doc.replace('\n</TimeML>\n\n', '')
         return doc
 
     @staticmethod
     @lru_cache(maxsize=24)
-    ddef sutime_prediction(texts,processed_date=None):
+    def sutime_prediction(texts,processed_date=None):
         compelete_text='\n'.join(texts)
         if processed_date:
             reference_date = datetime.strptime(processed_date, '%Y-%M-%d')
-            json_doc=cache["sutime"].parse('\n'.join(compelete_text), reference_date.isoformat())
+            json_doc=cache["SUTime"].parse('\n'.join(compelete_text), reference_date.isoformat())
         else:
-            json_doc=cache["sutime"].parse(compelete_text)
+            json_doc=cache["SUTime"].parse(compelete_text)
         pervious_end=0
         new_text=""
         for annotation in json_doc:
@@ -157,41 +156,42 @@ class TimeTag(Resource):
         return new_text
 
 
+
     @staticmethod
     @lru_cache(maxsize=24)
     def tagger_prediction(texts, classifier_type, processed_date):
         annotated_texts = []
-        if classifier_type=="german":
-            text_tokenizer = cache["classifier_german_tokenizer"]
+        if classifier_type=="DE":
+            text_tokenizer = cache["Classifier_DE_tokenizer"]
         else:
-            text_tokenizer = cache["classifier_tokenizer"]
+            text_tokenizer = cache["Classifier_tokenizer"]
         annotation_id = 1
         for input_text in texts:
             processed_text = text_tokenizer(input_text, return_tensors="pt").to(device)
 
             # Preprocess inputs depending on model type
-            if classifier_type == "date":
+            if classifier_type == "DATE":
                 processed_text["input_date_ids"] = processed_date
-                model_name = "classifier_with_date"
-            elif classifier_type == "normal":
-                model_name = "classifier_base"
-            elif classifier_type=="crf":
+                model_name = "Classifier_DATE_EN"
+            elif classifier_type == "EN":
+                model_name = "Classifier_EN"
+            elif classifier_type=="CRF":
                 processed_text["inference_mode"] = True
-                model_name = "classifier_crf"
+                model_name = "Classifier_CRF_EN"
             else:
-                model_name="classifier_german"
+                model_name="Classifier_DE"
 
             # Compute forward pass without activations
             with torch.no_grad():
                 result = cache[model_name](**processed_text)
 
             # Decode results based on model
-            if classifier_type != "crf":
+            if classifier_type != "CRF":
                 classification = torch.argmax(result[0], dim=2)[0]
                 id2label = cache["id2label"]
             else:
                 classification = result[0][0]
-                id2label = {v: k for k, v in cache["classifier_crf"].config.label2id.items()}
+                id2label = {v: k for k, v in cache["Classifier_CRF_EN"].config.label2id.items()}
 
             # Alignment of tokens and post-processing
             merged_tokens = merge_tokens(processed_text["input_ids"][0], classification, id2label, text_tokenizer)
@@ -202,6 +202,7 @@ class TimeTag(Resource):
 
 
 api.add_resource(TimeTag, "/time_tag")  # add endpoints
+
 
 
 if __name__ == "__main__":
