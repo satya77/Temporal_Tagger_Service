@@ -1,17 +1,18 @@
-#code adapted form https://github.com/Louis-udm/NER-BERT-CRF/blob/master/NER_BERT_CRF.py
+# code adapted form https://github.com/Louis-udm/NER-BERT-CRF/blob/master/NER_BERT_CRF.py
 import torch
-from transformers import BertModel, BertConfig ##### import these guys -important otherwise config error and you spend an hour figuring out!
+from transformers import BertModel
 from transformers.models.bert.modeling_bert import BertPreTrainedModel
 from torch import nn
-from torch.nn import CrossEntropyLoss, BCELoss, LayerNorm
+from torch.nn import LayerNorm
 from transformers.modeling_outputs import TokenClassifierOutput
 
 # Hack to guarantee backward-compatibility.
 BertLayerNorm = LayerNorm
 
 
-def log_sum_exp_batch(log_Tensor, axis=-1): # shape (batch_size,n,m)
-    return torch.max(log_Tensor, axis)[0]+torch.log(torch.exp(log_Tensor-torch.max(log_Tensor, axis)[0].view(log_Tensor.shape[0],-1,1)).sum(axis))
+def log_sum_exp_batch(log_Tensor, axis=-1):  # shape (batch_size,n,m)
+    return torch.max(log_Tensor, axis)[0] + torch.log(torch.exp(log_Tensor-torch.max(log_Tensor, axis)[0]
+                                                                .view(log_Tensor.shape[0], -1, 1)).sum(axis))
 
 
 class BERT_CRF_NER(BertPreTrainedModel):

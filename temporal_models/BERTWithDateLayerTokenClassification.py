@@ -2,12 +2,10 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from torch.nn import CrossEntropyLoss
-from transformers.models.bert.modeling_bert import BertPreTrainedModel, BertModel, \
-    BERT_INPUTS_DOCSTRING, _TOKENIZER_FOR_DOC, _CHECKPOINT_FOR_DOC, TokenClassifierOutput, _CONFIG_FOR_DOC
+from transformers.models.bert.modeling_bert import BertPreTrainedModel, BertModel, TokenClassifierOutput
 
 
-
-class DateEmebdding(nn.Module):
+class DateEmbedding(nn.Module):
     """Construct the embeddings the creation date"""
 
     def __init__(self, config):
@@ -68,7 +66,7 @@ class BERTWithDateLayerTokenClassification(BertPreTrainedModel):
         self.num_labels = config.num_labels
 
         self.bert = BertModel(config, add_pooling_layer=False)
-        self.date_embedding = DateEmebdding(config)
+        self.date_embedding = DateEmbedding(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.date_hidden_size + config.hidden_size, config.num_labels)
         # self.classifier = nn.Linear(config.hidden_size, config.num_labels)

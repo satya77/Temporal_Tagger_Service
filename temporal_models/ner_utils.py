@@ -513,14 +513,14 @@ if is_torch_available():
                 overwrite_cache=False,
                 mode: Split = Split.train,
         ):
-            # Load data features from cache or dataset file
+            # Load data features from transformers_cache or dataset file
             cached_features_file = os.path.join(
                 data_dir,
                 "cached_{}_{}_{}".format(mode.value, tokenizer.__class__.__name__, str(max_seq_length)),
             )
 
             # Make sure only the first process in distributed training processes the dataset,
-            # and the others will use the cache.
+            # and the others will use the transformers_cache.
             lock_path = cached_features_file + ".lock"
             with FileLock(lock_path):
 
@@ -538,13 +538,13 @@ if is_torch_available():
                             max_seq_length,
                             tokenizer,
                             tokenizer_date,
-                            cls_token_at_end=bool(model_type in ["xlnet"]),
-                            # xlnet has a cls token at the end
+                            cls_token_at_end=False,
                             cls_token=tokenizer.cls_token,
-                            cls_token_segment_id=2 if model_type in ["xlnet"] else 0,
+                            cls_token_segment_id=0,
                             sep_token=tokenizer.sep_token,
                             sep_token_extra=False,
-                            # roberta uses an extra separator b/w pairs of sentences, cf. github.com/pytorch/fairseq/commit/1684e166e3da03f5b600dbb7855cb98ddfcd0805
+                            # roberta uses an extra separator b/w pairs of sentences,
+                            # cf. github.com/pytorch/fairseq/commit/1684e166e3da03f5b600dbb7855cb98ddfcd0805
                             pad_on_left=bool(tokenizer.padding_side == "left"),
                             pad_token=tokenizer.pad_token_id,
                             pad_token_segment_id=tokenizer.pad_token_type_id,
@@ -559,10 +559,10 @@ if is_torch_available():
                             labels,
                             max_seq_length,
                             tokenizer,
-                            cls_token_at_end=bool(model_type in ["xlnet"]),
+                            cls_token_at_end=False,
                             # xlnet has a cls token at the end
                             cls_token=tokenizer.cls_token,
-                            cls_token_segment_id=2 if model_type in ["xlnet"] else 0,
+                            cls_token_segment_id=0,
                             sep_token=tokenizer.sep_token,
                             sep_token_extra=False,
                             # roberta uses an extra separator b/w pairs of sentences,

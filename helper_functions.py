@@ -1,10 +1,12 @@
-import re
 from typing import List, Tuple
+from collections import Counter
+
+from transformers import AutoTokenizer, BertForTokenClassification, AutoModelForTokenClassification
+
 from temporal_models.BERTWithDateLayerTokenClassification import BERTWithDateLayerTokenClassification
 from temporal_models.NumBertTokenizer import NumBertTokenizer
 from temporal_models.BERTWithCRF import BERT_CRF_NER
-from collections import Counter
-from transformers import AutoTokenizer, BertForTokenClassification
+
 
 def find_timex_in_text(timex_preds, input_text, model_type):
     if model_type == "bert":
@@ -17,15 +19,16 @@ def find_timex_in_text(timex_preds, input_text, model_type):
     index = 0
     for timex in timex_preds:
         cleaned_text = timex.text.replace("<", "").replace(">", "").replace("\"", "").strip()
-        # sometimes the cleaninng has leftovers
+        # sometimes the cleaning has leftovers
         if cleaned_text.startswith("- "):
             cleaned_text = cleaned_text[2:]
 
         if len(cleaned_text) < 2:
-            continue;
+            continue
         beginning_timex = original_paragraph[end_previous_timex:].find(cleaned_text)
-        if cleaned_text == "day" and beginning_timex != -1 and original_paragraph[
-                                                               beginning_timex - 2:beginning_timex] == "to":
+        if cleaned_text == "day" and \
+           beginning_timex != -1 and \
+           original_paragraph[beginning_timex - 2:beginning_timex] == "to":
             cleaned_text = "today"
             beginning_timex = original_paragraph[end_previous_timex:].find(cleaned_text)
         # if the model predicted full year instead of the last two digits
@@ -33,7 +36,7 @@ def find_timex_in_text(timex_preds, input_text, model_type):
             beginning_timex = original_paragraph[end_previous_timex:].find(cleaned_text[2:])
             cleaned_text = cleaned_text[2:].strip()
 
-        # if the model predicted full year with an extra repeation
+        # if the model predicted full year with an extra repetition
         if beginning_timex == -1 and len(cleaned_text) == 6 and cleaned_text.isdigit():
             beginning_timex = original_paragraph[end_previous_timex:].find(cleaned_text[:-2])
             cleaned_text = cleaned_text[:-2].strip()
@@ -56,54 +59,57 @@ def find_timex_in_text(timex_preds, input_text, model_type):
                 if word in original_paragraph[end_previous_timex:]:
                     cleaned_text = word
                     beginning_timex = original_paragraph[end_previous_timex:].find(cleaned_text)
-                    break;
+                    break
         # more than one words the first one is a digit
-        elif beginning_timex == -1 and len(cleaned_text.split(" ")) < 2 and len(
-                cleaned_text) > 2 and not cleaned_text[:1].isdigit() and cleaned_text[-1].isdigit():
+        elif beginning_timex == -1 and \
+                len(cleaned_text.split(" ")) < 2 and \
+                len(cleaned_text) > 2 and \
+                not cleaned_text[:1].isdigit() and cleaned_text[-1].isdigit():
             word = cleaned_text[:-1]
             if word.lower() in original_paragraph[end_previous_timex:].lower():
                 cleaned_text = word
                 beginning_timex = original_paragraph[end_previous_timex:].lower().find(cleaned_text.lower())
-                break;
-        # if its just a single word
-        elif beginning_timex == -1 and len(cleaned_text.split(" ")) < 2 and len(cleaned_text) > 2 and not \
-                cleaned_text[0].isdigit() and cleaned_text[-1].isdigit():
+                break
+        # if it is just a single word
+        elif beginning_timex == -1 and \
+                len(cleaned_text.split(" ")) < 2 and \
+                len(cleaned_text) > 2 and not \
+                cleaned_text[0].isdigit() and \
+                cleaned_text[-1].isdigit():
+
             for i in range(2, len(cleaned_text)):
                 word = cleaned_text[:i]
-                if " " + word + " " in original_paragraph[
-                                       end_previous_timex:] or " " + word + "." in original_paragraph[
-                                                                                   end_previous_timex:] or " " + word + "," in original_paragraph[
-                                                                                                                               end_previous_timex:]:
+                if " " + word + " " in original_paragraph[end_previous_timex:] or \
+                        " " + word + "." in original_paragraph[end_previous_timex:] or \
+                        " " + word + "," in original_paragraph[end_previous_timex:]:
                     cleaned_text = word
                     beginning_timex = original_paragraph[end_previous_timex:].find(cleaned_text)
-                    break;
+                    break
 
-        # if its just a single word ending with digits
+        # if it is just a single word ending with digits
         if beginning_timex == -1 and len(cleaned_text.split(" ")) < 2:
             for i in range(2, len(cleaned_text)):
                 word = cleaned_text[:i]
-                if " " + word + " " in original_paragraph[
-                                       end_previous_timex:] or " " + word + "." in original_paragraph[
-                                                                                   end_previous_timex:] or " " + word + "," in original_paragraph[
-                                                                                                                               end_previous_timex:]:
+                if " " + word + " " in original_paragraph[end_previous_timex:] or \
+                        " " + word + "." in original_paragraph[end_previous_timex:] or \
+                        " " + word + "," in original_paragraph[end_previous_timex:]:
                     cleaned_text = word
                     beginning_timex = original_paragraph[end_previous_timex:].find(cleaned_text)
-                    break;
-        # if you can not find it, see if you can match the first word in the multi word one
+                    break
+        # if you can not find it, see if you can match the first word in the multi-word one
         if beginning_timex == -1 and len(cleaned_text.split(" ")) > 1:
             for word in cleaned_text.split(" "):
-                if word in original_paragraph[end_previous_timex:] and word not in ["a", "-", ".", "the",
-                                                                                    "in", "then", "'s",
-                                                                                    "have", "at", "be"]:
+                if word in original_paragraph[end_previous_timex:] and \
+                        word not in ["a", "-", ".", "the", "in", "then", "'s", "have", "at", "be"]:
                     cleaned_text = word
                     beginning_timex = original_paragraph[end_previous_timex:].find(cleaned_text)
-                    break;
+                    break
 
         if beginning_timex == -1 and cleaned_text.lower() in original_paragraph[
                                                              end_previous_timex:].lower():
             beginning_timex = original_paragraph[end_previous_timex:].lower().find(cleaned_text.lower())
 
-        # avoid tag repetion
+        # avoid tag repetition
         if cleaned_text == previous_timex_cleaned_text:
             continue
 
@@ -115,13 +121,12 @@ def find_timex_in_text(timex_preds, input_text, model_type):
         index = index + 1
         beginning_timex = beginning_timex + end_previous_timex
         # if the word ended with one of these symbols do not put a space after timex tag
-        if original_paragraph[beginning_timex - 1:beginning_timex] in ["\n", "'", "-", ",", "\"",
-                                                                       "("] or original_paragraph[
-                                                                               beginning_timex - 1:beginning_timex].isdigit():
+        if original_paragraph[beginning_timex - 1:beginning_timex] in ["\n", "'", "-", ",", "\"","("] or \
+                original_paragraph[beginning_timex - 1:beginning_timex].isdigit():
             new_text += f'{input_text[end_previous_timex:beginning_timex]}<TIMEX3 tid="t{index + 1}" ' \
                         f'type="{timex.attrs["type"].upper()}" value="{timex.attrs["value"].strip().replace("</timex3>", "").replace("<", "").replace(">", "").replace(" ", "").upper()}">{input_text[beginning_timex:beginning_timex + len(cleaned_text)]}</TIMEX3>'
 
-        else:  # otherwises put a space
+        else:  # otherwise, put a space
             new_text += f'{input_text[end_previous_timex:beginning_timex]} <TIMEX3 tid="t{index + 1}" ' \
                         f'type="{timex.attrs["type"].upper()}" value="{timex.attrs["value"].strip().replace("</timex3>", "").replace("<", "").replace(">", "").replace(" ", "").upper()}">{input_text[beginning_timex:beginning_timex + len(cleaned_text)]}</TIMEX3>'
 
@@ -129,138 +134,6 @@ def find_timex_in_text(timex_preds, input_text, model_type):
 
     new_text = new_text + input_text[end_previous_timex:]
     return new_text
-
-def clean_predictions(decoded_preds):
-    """
-    clean the seq2seq predictions
-    :param decoded_preds: the raw predictionss
-    :return: cleaned text
-    """
-
-    # take care of tag formatiing
-
-    decoded_preds = decoded_preds.replace("&gt;", ">").replace("&lt;", "<")
-    decoded_preds = decoded_preds.replace(" < / timex3  ", " </timex3") \
-        .replace("< timex3 ", "<timex3 ") \
-        .replace("< / timex3 >", "</timex3>") \
-        .replace("/ timex3 >", "</timex3>") \
-        .replace(" </timex>", " </timex3>") \
-        .replace("</timex3></timex3>", "</timex3>") \
-        .replace("timex&gt;", "</timex3>") \
-        .replace("timex ", "</timex3> ").replace("</time x3>","</timex3>")
-    decoded_preds = re.sub(r"([a-z])timex3>", "\g<1> </timex3>", decoded_preds)
-    decoded_preds = re.sub(r"</timex3></timex3>", "</timex3>", decoded_preds)
-    decoded_preds = re.sub(r"timex>", "</timex3>", decoded_preds)
-    decoded_preds = re.sub(r" </ </timex3>", "</timex3>", decoded_preds)
-
-    # remove the most prominent hallucinations.
-    decoded_preds = decoded_preds.replace('type="D"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('type="DATEATION"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('type="DUR"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('type="S"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type="S"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type="TIMEATE"', 'type="TIME"')
-    decoded_preds = decoded_preds.replace('type="TIMEATEATION"', 'type="TIME"')
-    decoded_preds = decoded_preds.replace('type="TIMEURATION"', 'type="TIME"')
-    decoded_preds = decoded_preds.replace('value="PENT_REF"', 'value="PRESENT_REF"')
-    decoded_preds = decoded_preds.replace('value="PRESXD"', 'value="PRESENT_REF"')
-    decoded_preds = decoded_preds.replace('value="PRESENTD"', 'value="PRESENT_REF"')
-    decoded_preds = decoded_preds.replace('type="SETURY"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type="SETATEY"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type="SETATE"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type="DATEATE"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('type="2018ATE"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('type="SETURATION"', 'type="DURATION"')
-    decoded_preds = decoded_preds.replace('type="SETATEATION"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type="SETSETY"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('fre="SET"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('fre="D"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('type="2014ATE"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('quan = " set "', 'type="SET"')
-    decoded_preds = decoded_preds.replace('quant="D"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('quan=" duration "', 'type="DURATION"')
-    decoded_preds = decoded_preds.replace('quan = " duration "', 'type="DURATION"')
-    decoded_preds = decoded_preds.replace('fr=" date "', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('nowENT', 'now"')
-    decoded_preds = decoded_preds.replace('WeekEND', 'Weekends"')
-    decoded_preds = decoded_preds.replace('yesterdayENT', 'yesterday"')
-    decoded_preds = decoded_preds.replace('yesterdayXX', 'yesterday"')
-    decoded_preds = decoded_preds.replace('type = "date"', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('type = " date "', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('type = "set"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type = " set "', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type = " duration "', 'type="DURATION"')
-    decoded_preds = decoded_preds.replace('type = "duration"', 'type="DURATION"')
-    decoded_preds = decoded_preds.replace('type = "time"', 'type="TIME"')
-    decoded_preds = decoded_preds.replace('type = " time "', 'type="TIME"')
-    decoded_preds = decoded_preds.replace('type = "setate"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type="SETVERY"', 'type="SET"')
-    decoded_preds = decoded_preds.replace('type=""', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('quant="SET"', 'type="SET""')
-    decoded_preds = decoded_preds.replace('fr = " set "', 'type="SET""')
-    decoded_preds = decoded_preds.replace('fre="D" "', 'type="DATE""')
-    decoded_preds = decoded_preds.replace('2014timex3', '2014</timex3>')
-    decoded_preds = decoded_preds.replace('yesterdayterday', 'yesterday')
-    decoded_preds = decoded_preds.replace('tomorrowENT', 'tomorrow')
-    decoded_preds = decoded_preds.replace('tomorroworrow', 'tomorrow')
-    decoded_preds = decoded_preds.replace('tomorrowXX', 'tomorrow')
-    decoded_preds = decoded_preds.replace('todayorrow', 'tomorrow')
-    decoded_preds = decoded_preds.replace('summermer', 'summer')
-    decoded_preds = decoded_preds.replace('summerUT', 'summer')
-    decoded_preds = decoded_preds.replace('summerSU', 'summer')
-    decoded_preds = decoded_preds.replace('tomXX', 'tomorrow')
-    decoded_preds = decoded_preds.replace('tom60', 'tomorrow')
-    decoded_preds = re.sub('<timex3>', '</timex3>', decoded_preds)
-    decoded_preds = decoded_preds.replace('<timex3 > = " date "', '<timex3  type="DATE"')
-    decoded_preds = decoded_preds.replace('<timex3> = " date "', '<timex3  type="DATE"')
-    decoded_preds = decoded_preds.replace('quan=" duration "', 'type="DURATION"')
-    decoded_preds = decoded_preds.replace('fr =" date "', 'type="DATE"')
-    decoded_preds = decoded_preds.replace('fr = " date "', 'type="DATE"')
-
-    # some more tag formating
-    decoded_preds = decoded_preds.replace(':">">">', '')
-    decoded_preds = decoded_preds.replace('>>', '>')
-    decoded_preds = decoded_preds.replace('":">', '">')
-    decoded_preds = decoded_preds.replace('P3:">:">-', 'P3')
-    decoded_preds = decoded_preds.replace('</ ', '')
-    decoded_preds = re.sub(r"\"\>[\w\:\-]+\"\>", '">', decoded_preds)
-    decoded_preds = re.sub(r"\<\/[\w\-\:]+\<\/", '</', decoded_preds)
-    decoded_preds = re.sub(r"\"\>XX\-", '">', decoded_preds)
-    decoded_preds = re.sub(r'\">:\">', '">', decoded_preds)
-    decoded_preds = re.sub(r':timex3>.', '</timex3>', decoded_preds)
-    decoded_preds = re.sub('\w+timex3\stype', '<timex3 type', decoded_preds)
-    decoded_preds = re.sub('\d+timex3\stype', '<timex3 type', decoded_preds)
-    decoded_preds = re.sub('<timex3>', '</timex3>', decoded_preds)
-    decoded_preds = re.sub('--timex3>', '</timex3>', decoded_preds)
-    decoded_preds = decoded_preds.replace('<timex3> = " date "', '<timex3  type="DATE"')
-    truncated_values = re.findall(r'value=\"[\w\-\:]+\s', decoded_preds)
-    for v in truncated_values:
-        decoded_preds = decoded_preds.replace(v, v + '">')
-
-    concatanated_value = re.findall(r'\w+\-timex3\>', decoded_preds)
-    for v in concatanated_value:
-        decoded_preds = decoded_preds.replace(v, v.split("-")[0] + '"<' + v.split("-")[1])
-
-    additional_white_space = re.findall(r'value=\"[\d\w\:\-\_]+\s\"', decoded_preds)
-    for v in additional_white_space:
-        decoded_preds = decoded_preds.replace(v, v.replace(" ", ""))
-
-    double_end = re.findall(r'\"\>[\w]+\"\>', decoded_preds)
-    for v in double_end:
-        decoded_preds = decoded_preds.replace(v, v[2:])
-
-    strange_values = re.findall(r'\"\:\"\>', decoded_preds)
-    for v in strange_values:
-        decoded_preds = decoded_preds.replace(v, '">')
-
-    decoded_preds = re.sub(r' <\n', '\n', decoded_preds)
-    decoded_preds = re.sub(r'  ', ' ', decoded_preds)
-
-    decoded_preds = re.sub(r'\b(\w+)( \1\b)+', r'\1', decoded_preds)
-
-
-    return decoded_preds
-
 
 
 def preprocess_group(annotation_group: str) -> str:
@@ -353,6 +226,7 @@ def get_pred_type(prediction: str) -> str:
     else:
         return prediction.split("-")[1]
 
+
 def get_model_and_tokenizers(args):
     if args.model_type == "date":
         model = BERTWithDateLayerTokenClassification.from_pretrained(args.model_dir)
@@ -390,7 +264,6 @@ def place_timex_tag(raw_text, tagged_text, annotation_group, annotation_id, anno
     raw_text = raw_text[start_idx + len(annotation_group):]
 
     return raw_text, tagged_text, annotation_id+1
-
 
 
 def merge_tokens(bpe_text, bpe_predictions, id2label, tokenizer) -> List[Tuple[str, str]]:
@@ -435,7 +308,7 @@ def merge_tokens(bpe_text, bpe_predictions, id2label, tokenizer) -> List[Tuple[s
                 merged_tokens.append((current_multi_token, get_vote_type(current_multi_vote)))
                 current_multi_token = ""
                 current_multi_vote = []
-            # Previous token was single word anyways
+            # Previous token was single word
             else:
                 merged_tokens.append((token, get_pred_type(pred)))
 
@@ -447,10 +320,6 @@ def merge_tokens(bpe_text, bpe_predictions, id2label, tokenizer) -> List[Tuple[s
 def insert_tags_in_raw_text(raw_text: str, merged_tokens: List[Tuple[str, str]], annotation_id: int = 1):
     """
     This takes the original raw text, and iterates over it to insert the predicted tags at the right positions.
-    :param raw_text:
-    :param merged_tokens:
-    :param annotation_id
-    :return:
     """
     tagged_text = ""
     prev_tag = "O"
@@ -459,17 +328,17 @@ def insert_tags_in_raw_text(raw_text: str, merged_tokens: List[Tuple[str, str]],
     for token, tag in merged_tokens:
         # If we still have the same tag, then we either just extend the annotation (not "O"), or just leave it ("O").
         if tag == prev_tag:
-            if tag != "O" and tag !="[PAD]":
+            if tag != "O" and tag != "[PAD]":
                 current_annotation_group += f" {token}"
             continue
 
         else:
             # This means we're just opening an annotation, e.g., "O DATE"
-            if prev_tag != "O" and prev_tag!="[PAD]":
+            if prev_tag != "O" and prev_tag != "[PAD]":
                 raw_text, tagged_text, annotation_id = place_timex_tag(raw_text, tagged_text, current_annotation_group,
                                                                        annotation_id, prev_tag)
                 # Immediately store the next token, as it is also tagged, but in a different group
-                if tag != "O" and prev_tag!="[PAD]" :
+                if tag != "O" and prev_tag != "[PAD]":
                     current_annotation_group = token
                 else:
                     current_annotation_group = ""
