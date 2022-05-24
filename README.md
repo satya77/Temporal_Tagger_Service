@@ -1,7 +1,17 @@
 # Temporal Tagger API
+
+This repository provides the source code for the following demo paper:  
+
+
+### Oline DATEing: A Web Interface for Temporal Annotations
 Dennis Aumiller*, Satya Almasian*, David Pohl, Michael Gertz  
-Heidelberg University, 2022  
-Currently under submission as a demonstration paper at SIGIR 2022.
+Institute of Computer Science, Heidelberg University  
+To be presented at SIGIR 2022.  
+(`*` indicates equal contribution)
+
+**You can try out a demo of this interface online: https://onlinedating.ifi.uni-heidelberg.de/**
+
+---------------------------------------------
 
 This repository contains code for a Flask-RESTful API that adds temporal annotations to raw text.
 The input is a raw text, where the paragraphs are seperated by `\n`. The output is an XML-tagged text with TIMEX3 tags.
