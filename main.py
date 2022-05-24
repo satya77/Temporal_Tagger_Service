@@ -8,6 +8,7 @@ from flask_restful import Resource, Api, reqparse
 from transformers_wrapper import transformer_prediction, TRANSFORMERS_LANGUAGES
 from heideltime_wrapper import heideltime_prediction, HEIDELTIME_LANGUAGES
 from sutime_wrapper import sutime_prediction, SUTIME_LANGUAGES
+from timexy_wrapper import timexy_prediction, TIMEXY_LANGUAGES
 
 
 app = Flask(__name__)
@@ -72,6 +73,11 @@ class TimeTag(Resource):
                 return unsupported_language_response(args["model_type"], SUTIME_LANGUAGES)
 
             return sutime_prediction(texts, args["language"], args["date"])
+        elif args["model_type"].startswith("timexy"):
+            if args["language"] not in TIMEXY_LANGUAGES:
+                return unsupported_language_response(args["model_type"], TIMEXY_LANGUAGES)
+
+            return timexy_prediction(texts, args["language"])
         else:
             return {"tagged_text": "Error: Unsupported model type specified!"}, 409
 

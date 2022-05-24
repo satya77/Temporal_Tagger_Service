@@ -9,7 +9,8 @@ from datetime import datetime
 from sutime import SUTime
 
 SUTIME_LANGUAGES = {"en", "es"}
-sutime_cache = {"SUTime": SUTime(mark_time_ranges=True, include_range=True)}
+sutime_cache = {"en": SUTime(mark_time_ranges=True, include_range=True, language="english"),
+                "es": SUTime(mark_time_ranges=True, include_range=True, language="spanish")}
 
 
 @lru_cache(maxsize=24)
@@ -19,9 +20,9 @@ def sutime_prediction(texts: List[str], language: str, processed_date: Union[Non
 
     if processed_date:
         reference_date = datetime.strptime(processed_date, '%Y-%M-%d')
-        json_doc = sutime_cache["SUTime"].parse('\n'.join(complete_text), reference_date.isoformat())
+        json_doc = sutime_cache[language].parse('\n'.join(complete_text), reference_date.isoformat())
     else:
-        json_doc = sutime_cache["SUTime"].parse(complete_text)
+        json_doc = sutime_cache[language].parse(complete_text)
     previous_end = 0
     new_text = ""
 
