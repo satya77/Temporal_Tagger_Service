@@ -27,15 +27,15 @@ transformers_cache["classifier_tokenizer"] = AutoTokenizer.from_pretrained("saty
 transformers_cache["date_tokenizer"] = NumBertTokenizer("./temporal_models/vocab_date.txt")
 
 # English classification models
-# transformers_cache["classifier_date_en"] = BERTWithDateLayerTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_DATEBERT_tokenclassifier").to(device)
+transformers_cache["classifier_date_en"] = BERTWithDateLayerTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_DATEBERT_tokenclassifier").to(device)
 transformers_cache["classifier_en"] = BertForTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_BERT_tokenclassifier").to(device)
-# transformers_cache["classifier_crf_en"] = BERT_CRF_NER.from_pretrained("satyaalmasian/temporal_tagger_BERTCRF_tokenclassifier").to(device)
-#
-# # German tokenization models
-# transformers_cache["classifier_de"] = AutoModelForTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_German_GELECTRA").to(device)
-# transformers_cache["classifier_de_tokenizer"] = AutoTokenizer.from_pretrained("satyaalmasian/temporal_tagger_German_GELECTRA", use_fast=False)
-#
-# # ID to label dictionary for model predictions
+transformers_cache["classifier_crf_en"] = BERT_CRF_NER.from_pretrained("satyaalmasian/temporal_tagger_BERTCRF_tokenclassifier").to(device)
+
+# German tokenization models
+transformers_cache["classifier_de"] = AutoModelForTokenClassification.from_pretrained("satyaalmasian/temporal_tagger_German_GELECTRA").to(device)
+transformers_cache["classifier_de_tokenizer"] = AutoTokenizer.from_pretrained("satyaalmasian/temporal_tagger_German_GELECTRA", use_fast=False)
+
+# ID to label dictionary for model predictions
 transformers_cache["id2label"] = {v: k for k, v in transformers_cache["classifier_en"].config.label2id.items()}
 
 
