@@ -1,20 +1,25 @@
 from argparse import ArgumentParser
+from typing import Tuple, Dict
 
 import torch
 from flask import Flask
 from flask_restful import Resource, Api, reqparse
 
-from transformers_wrapper import transformer_prediction
-from heideltime_wrapper import heideltime_prediction
-from sutime_wrapper import sutime_prediction
+from transformers_wrapper import transformer_prediction, TRANSFORMERS_LANGUAGES
+from heideltime_wrapper import heideltime_prediction, HEIDELTIME_LANGUAGES
+from sutime_wrapper import sutime_prediction, SUTIME_LANGUAGES
 
 
 app = Flask(__name__)
 api = Api(app)
 
+# Automatically uses GPU, if available.
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-print("Caching models...")
+
+def unsupported_language_response(model: str, supported_langs: str) -> Tuple[Dict, int]:
+    return {"tagged_text": f"Unsupported language for model {model} specified. "
+                           f"This model only supports the following languages: {supported_langs}"}, 409
 
 
 class TimeTag(Resource):
@@ -22,36 +27,57 @@ class TimeTag(Resource):
     def post(self):
 
         parser = reqparse.RequestParser()  # initialize
-        parser.add_argument("model_type", required=True, type=str)  # add args
+        # add individual expected arguments
+        parser.add_argument("model_type", required=True, type=str)
+        parser.add_argument("language", required=True, type=str)
         parser.add_argument("input", required=True, type=str)
         parser.add_argument("date", required=False, type=str)
 
-        args = parser.parse_args()  # parse arguments to dictionary
-        # Make model name more robust against spelling differences
+        # parse arguments to dictionary
+        args = parser.parse_args()
+
+        # Make model name more robust against spelling mistakes
         args["model_type"] = args["model_type"].lower()
-        # Force as tuple to allow for LRU transformers_cache
+        args["language"] = args["language"].lower()
+
+        # Force input text as tuple to allow for LRU caching
         input_texts = tuple(args["input"].split("\n"))
+
         return self.annotate_texts(input_texts, args)
 
     @staticmethod
     def annotate_texts(texts, args):
         if args["model_type"].startswith("classifier"):
-            classifier_type = args["model_type"].split("_")[1]
-            return transformer_prediction(texts, classifier_type, args["date"])
+            if args["language"] not in TRANSFORMERS_LANGUAGES:
+                return unsupported_language_response(args["model_type"], TRANSFORMERS_LANGUAGES)
+
+            if len(args["model_type"].split("_")) > 1:
+                classifier_type = args["model_type"].split("_")[1]
+            else:
+                classifier_type = "classifier"
+
+            return transformer_prediction(texts, args["language"], classifier_type, args["date"])
         elif args["model_type"].startswith("heideltime"):
-            if len(args["model_type"].split("_")) < 3:
-                return {"tagged_text":
-                        "Error: Please specify text as 'COLLOQUIAL', 'SCIENTIFIC', 'NEWS', or 'NARRATIVE'!"}, 409
-            heideltime_lang = args["model_type"].split("_")[1]
-            heideltime_mode = args["model_type"].split("_")[2]
-            return heideltime_prediction(texts, heideltime_lang, heideltime_mode, args["date"])
+            if args["language"] not in HEIDELTIME_LANGUAGES:
+                return unsupported_language_response(args["model_type"], HEIDELTIME_LANGUAGES)
+
+            if len(args["model_type"].split("_")) > 1:
+                heideltime_mode = args["model_type"].split("_")[1]
+            else:
+                # If no mode is specified, default to NARRATIVES as per Heideltime docs
+                heideltime_mode = "NARRATIVES"
+            return heideltime_prediction(texts, args["language"], heideltime_mode, args["date"])
         elif args["model_type"].startswith("sutime"):
-            return sutime_prediction(texts, args["date"])
+            if args["language"] not in SUTIME_LANGUAGES:
+                return unsupported_language_response(args["model_type"], SUTIME_LANGUAGES)
+
+            return sutime_prediction(texts, args["language"], args["date"])
         else:
-            return {"tagged_text": "Error: Unspecified model detected!"}, 409
+            return {"tagged_text": "Error: Unsupported model type specified!"}, 409
 
 
 api.add_resource(TimeTag, "/time_tag")  # add endpoints
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
