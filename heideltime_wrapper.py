@@ -9,7 +9,8 @@ from python_heideltime import Heideltime
 heideltime_cache = {"heideltime": Heideltime()}
 
 HEIDELTIME_LANGUAGES = {"en", "de", "es", "ar", "fr"}
-LANGUAGE_MAPPING = {"en": "ENGLISH", "de": "GERMAN", "es": "SPANISH", "ar": "ARABIC", "fr": "FRENCH"}
+LANGUAGE_MAPPING = {"en": "ENGLISH", "de": "GERMAN", "es": "SPANISH", "it": "ITALIAN", "fr": "FRENCH",
+                    "nl": "DUTCH", "et": "ESTONIAN", "pt": "PORTUGUESE"}
 AVAILABLE_MODES = {"COLLOQUIAL", "SCIENTIFIC", "NEWS", "NARRATIVE"}
 
 
