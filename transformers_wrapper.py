@@ -17,6 +17,8 @@ from helper_functions import merge_tokens, insert_tags_in_raw_text
 # Fix for running transformers inference on MacOS
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
+TRANSFORMERS_LANGUAGES = {"de", "en"}
+
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 transformers_cache = {}
@@ -38,19 +40,21 @@ transformers_cache["id2label"] = {v: k for k, v in transformers_cache["classifie
 
 
 @lru_cache(maxsize=48)
-def transformer_prediction(texts: List[str], classifier_type: str, date: Union[None, str]) \
+def transformer_prediction(texts: List[str], language: str, classifier_type: str, date: Union[None, str]) \
         -> Tuple[Dict, int]:
     annotated_texts = []
-    if classifier_type == "de":
+    if language == "de":
         text_tokenizer = transformers_cache["classifier_de_tokenizer"]
-    else:
+    elif language == "en":
         text_tokenizer = transformers_cache["classifier_tokenizer"]
+    else:
+        raise ValueError("Unsupported language passed to transformers pipeline!")
     annotation_id = 1
 
     # Embed date, if relevant
     if classifier_type == "date":
         if date is None:
-            return {"tagged_text": "Specify a reference date for the!"}, 409
+            return {"tagged_text": "Reference date required for the date classifier!"}, 409
         processed_date = torch.LongTensor(
             transformers_cache["date_tokenizer"]([date.replace("-", " ")], add_special_tokens=False)["input_ids"]
         ).to(device)
@@ -62,18 +66,19 @@ def transformer_prediction(texts: List[str], classifier_type: str, date: Union[N
         processed_text = text_tokenizer(input_text, return_tensors="pt").to(device)
 
         # Preprocess inputs depending on model type
-        if classifier_type == "date":
+        if classifier_type == "date" and language == "en":
             processed_text["input_date_ids"] = processed_date
             model_name = "classifier_date_en"
-        elif classifier_type == "en":
+        elif classifier_type == "classifier" and language == "en":
             model_name = "classifier_en"
-        elif classifier_type == "crf":
+        elif classifier_type == "crf" and language == "en":
             processed_text["inference_mode"] = True
             model_name = "classifier_crf_en"
         elif classifier_type == "de":
             model_name = "classifier_de"
         else:
-            return {"tagged_text": "Error: Unrecognized model type for tagging methods!"}, 409
+            return {"tagged_text": f"Error: Unrecognized combination of model type '{classifier_type}' and "
+                                   f"language '{language}' for tagging methods!"}, 409
 
         # Compute forward pass without activations
         with torch.no_grad():
