@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en" data-configvalues="{{ values }}">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://kit.fontawesome.com/af4f417742.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <!-- CoreUI for Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@coreui/coreui@4.1.0/dist/css/coreui.min.css" rel="stylesheet"
+          integrity="sha384-o4R8yyydAVVE01v7Bu8LNx1F5Q8EL8inC2HwNB6t3LG7/Fx0bNnAkF8Y1SwCcxsE" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.css') }}">
+
+    <title>Online DATEing</title>
+</head>
+<body class="h-100 d-flex flex-column">
+
+<div id="encode" class="d-none"></div>
+
+<div id="loading"
+     class="container-fluid h-100 w-100 position-absolute bg-dark d-none"
+     style="--cui-bg-opacity: .5; z-index: 9999;">
+    <div class="row h-25"></div>
+    <div class="row h-50">
+        <div class="col d-flex justify-content-center align-items-center">
+            <div class="spinner-border" role="status" style="height: 5rem; width: 5rem;">
+                <span class="visually-hidden"></span>
+            </div>
+        </div>
+    </div>
+    <div class="row h-25">
+        <div class="col d-flex justify-content-center align-items-center">
+            <button id="abort" type="button" class="btn btn-danger text-uppercase">abort</button>
+        </div>
+    </div>
+</div>
+
+<input id="file" type="file" accept="text/plain, text/xml" multiple hidden/>
+
+<div id="toast" class="toast position-absolute bottom-0 end-0 m-2 align-items-center border-0" style="min-width: 600px;" role="alert" data-coreui-delay="10000">
+    <div class="toast-header bg-danger">
+        <strong class="me-auto text-white text-uppercase">error</strong>
+        <button type="button" class="btn-close btn-close-white" data-coreui-dismiss="toast"></button>
+    </div>
+    <div id="error-message" class="toast-body bg-danger text-white" style="min-height: 100px;"></div>
+</div>
+
+
+<header class="header pt-1 pb-1 ps-4 pe-4 " style="    padding-bottom: 2rem !important;">
+    <a href="/" class="header-brand mb-2 h1"><img src="{{ url_for('static', filename='css/onlinedating5.png') }}" width="50%"/>
+
+{#        <span class="mt-2">A Web Interface for Temporal Annotators</span>#}
+    </a>
+    <ul class="header-nav">
+
+        <li class="nav-item">
+            <a id="date" class="nav-link mb-3 text-uppercase type me-1 rounded-top text-truncate text-center" data-toggle="tooltip" data-placement="bottom" title="Date" style="width: 6rem;" data-caption="date" show>date</a>
+        </li>
+        <li class="nav-item">
+            <a id="set" class="nav-link text-uppercase type me-1 rounded-top text-truncate text-center"  data-toggle="tooltip" data-placement="bottom" title="Set" style="width: 6rem;" data-caption="set" show>set</a>
+        </li>
+        <li class="nav-item">
+            <a id="duration" class="nav-link text-uppercase type me-1 rounded-top text-truncate text-center"  data-toggle="tooltip" data-placement="bottom" title="Duration" style="width: 6rem;" data-caption="dur." show>dur.</a>
+        </li>
+        <li class="nav-item me-4">
+            <a id="time" class="nav-link text-uppercase type me-1 rounded-top text-truncate text-center"  data-toggle="tooltip" data-placement="bottom" title="Time" style="width: 6rem;" data-caption="time" show>time</a>
+        </li>
+        <li class="nav-item dropdown me-4">
+            <a id="model" class="nav-link  dropdown-toggle text-uppercase" style=" min-width: 12rem;background-color: #fbc96f;
+    border-radius: 4px;" role="button" data-coreui-toggle="dropdown">Choose a Model</a>
+            <ul id="models" class="dropdown-menu">
+                <li><a class="model dropdown-item " model="Classifier">Classifier</a></li>
+                <li><a class="model dropdown-item " model="Classifier_DATE">Classifier_DATE</a></li>
+                <li><a class="model dropdown-item " model="Classifier_CRF">Classifier_CRF</a></li>
+                <li><a class="model dropdown-item " model="HeidelTime">HeidelTime</a></li>
+                <li><a class="model dropdown-item " model="SUTime">SUTime</a></li>
+                <li><a class="model dropdown-item " model="Timexy">Timexy</a></li>
+
+                {# <li><a class="model dropdown-item text-uppercase" model="seq2seq_bert">seq2seq_bert</a></li>#}
+                {#                <li><a class="model dropdown-item text-uppercase" model="seq2seq_roberta">seq2seq_roberta</a></li>#}
+            </ul>
+        </li>
+        <li class="nav-item dropdown me-4">
+            <a id="lang" class="nav-link  dropdown-toggle text-uppercase" style=" min-width: 12rem;background-color: #fbc96f;
+    border-radius: 4px;" role="button" data-coreui-toggle="dropdown" >Language</a>
+            <ul id="langs" class="dropdown-menu">
+            </ul>
+        </li>
+        <li class="nav-item">
+            <ul class="navbar-nav me-5">
+                <li class="nav-item">
+                    <select id="mode" class=" ml-2 form-select select_cutom mode rounded-top rounded-0 border-bottom-2 rounded-top rounded-0 border-bottom-2 border-yellow d-none" style="margin-left: 3rem; min-width: 200px" disabled>
+                        <option value="0" selected>Mode...</option>
+                        <option value="1">NARRATIVES</option>
+                        <option value="2">NEWS</option>
+                        <option value="3">COLLOQUIAL</option>
+                        <option value="4">SCIENTIFIC</option>
+
+                    </select>
+                </li>
+            </ul>
+        </li>
+        <li class="nav-item">
+            <a id="process" class="nav-link text-uppercase horizontal" ><span class="text">export</span></a>
+        </li>
+        <li class="nav-item">
+            <a id="reset" class="nav-link text-uppercase invisible horizontal ml-2"><span class="text">reset</span></a>
+        </li>
+        <li class="nav-item">
+            <a id="download" class="nav-link text-uppercase invisible horizontal ml-2" ><span class="text">download</span></a>
+        </li>
+    </ul>
+
+    <ul class="header-nav">
+        <li class="nav-item">
+            <a id="help" class="nav-link horizontal text-uppercase " data-coreui-toggle="offcanvas"
+               data-coreui-target="#help-editor"><span class="text">help</span></a>
+        </li>
+    </ul>
+</header>
+
+
+<div id="documents" class="container-fluid d-flex flex-column flex-grow-1 pt-2 pe-4 pb-2 ps-4 h-100">
+    <nav class="navbar navbar-expand-lg navbar-light">
+{#        <span class="navbar-brand me-4 mb-0 h1 text-uppercase nav-link-yellow">documents</span>#}
+        <ul class="navbar-nav ml-2">
+            <li class="nav-item">
+                <a id="create" class="nav-link horizontal text-uppercase"><span class="text">create</span></a>
+            </li>
+        </ul>
+            <ul class="navbar-nav ml-2">
+            <li class="nav-item  ">
+                <a id="upload" class="nav-link horizontal text-uppercase"><span class="text">upload</span></a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-2">
+            <li class="nav-item">
+                <a id="example" class="nav-link text-uppercase horizontal"><span class="text">example</span></a>
+            </li>
+        </ul>
+    </nav>
+    <div class="row flex-fill">
+        <div class="col">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mt-4 mb-4">
+                    <thead>
+                    <tr class="table-dark">
+                        <th scope="col" style="width: 5%;">
+                            <div class="form-check">
+                                <input class="shadow-none border border-yellow form-check-input"
+                                       type="checkbox" value="" id="checks"
+                                       checked>
+                            </div>
+                        </th>
+                        <th scope="col" class="text-uppercase" style="width: 45%;">document</th>
+                        <th scope="col" class="text-uppercase" style="width: 30%;">reference date</th>
+                        <th scope="col" class="text-uppercase" style="width: 20%;">operation</th>
+                    </tr>
+                    </thead>
+                    <tbody id="docs"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="open" class="container-fluid d-flex flex-column flex-grow-1 pt-2 pe-4 pb-2 ps-4 h-100 d-none">
+    <div class="row h-100">
+        <div class="col-lg-9 col-md-12 d-flex flex-column">
+            <div class="row">
+                <div class="col">
+                    <nav class="navbar navbar-expand-lg navbar-light">
+                        <ul class="navbar-nav me-5">
+                            <li class="nav-item">
+                                <a id="close" class="nav-link text-uppercase nav-link-yellow">&lt;Back</a>
+                            </li>
+                        </ul>
+                        <input id="doc-name"
+                               type="text"
+                               class="doc-name form-control form-control-sm border-yellow border-top-0 border-end-0 border-bottom-2 border-start-0 rounded-0 me-5 rounded-top shadow-none"
+                               placeholder="NAME"
+                               autocomplete="off"
+                               spellcheck="false">
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item d-flex flex-row align-items-center">
+                                <input id="year" type="text"
+                                       class="date input-date form-control form-control-sm border-yellow border-top-0 border-end-0 border-bottom-2 border-start-0 rounded-0 rounded-top shadow-none"
+                                       placeholder="YYYY"
+                                       maxlength="4"
+                                       autocomplete="off"
+                                       style="text-align: center; width: 4rem;"
+                                       disabled>
+                                -
+                                <input id="month" type="text"
+                                       class="date input-date form-control form-control-sm border-yellow border-top-0 border-end-0 border-bottom-2 border-start-0 rounded-0 rounded-top shadow-none"
+                                       placeholder="MM"
+                                       maxlength="2"
+                                       autocomplete="off"
+                                       style="text-align: center; width: 4rem;"
+                                       disabled>
+                                -
+                                <input id="day" type="text"
+                                       class="date input-date form-control form-control-sm border-yellow border-top-0 border-end-0 border-bottom-2 border-start-0 rounded-0 rounded-top shadow-none"
+                                       placeholder="DD"
+                                       maxlength="2"
+                                       autocomplete="off"
+                                       style="text-align: center; width: 4rem;"
+                                       disabled>
+
+                            </li>
+
+
+
+                        </ul>
+
+                    </nav>
+                </div>
+            </div>
+            <div class="row flex-grow-1">
+                <div class="col">
+                    <div class="h-100 w-100 d-flex flex-column pt-2">
+                        <textarea id="editor" class="form-control flex-grow-1 overflow-auto border-0 shadow-none"
+                                  style="resize: none; scroll-behavior: smooth;" placeholder=". . ."
+                                  spellcheck="false"></textarea>
+                        <div id="canvas" class="form-control flex-grow-1 overflow-auto border-0 shadow-none d-none"
+                             style="white-space: pre-line; height: 0px; scroll-behavior: smooth;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="col-lg-3 col-md-12 d-flex flex-column pt-2">
+            <div id="tag-container" class="flex-grow-1 overflow-auto"
+                 style="height: 0px; scroll-behavior: smooth;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-bottom h-50" tabindex="-1" id="help-editor">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title text-uppercase">help</h5>
+        <button type="button" class="btn-close text-reset" data-coreui-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body small">
+        <div class="accordion accordion-flush" id="accordionFlushExample">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="flush-headingOne">
+                    <button class="accordion-button collapsed" type="button"
+                            data-coreui-toggle="collapse"
+                            data-coreui-target="#flush-collapseOne">
+                        Tag a single document (editor view)
+                    </button>
+                </h2>
+                <div id="flush-collapseOne" class="accordion-collapse collapse"
+                     data-coreui-parent="#accordionFlushExample">
+                    <div class="accordion-body ">
+                        <ol class="list-group list-group-numbered">
+                            <li class="list-group-item ">Create new documents by clicking on "CREATE" or insert an example by clicking "EXAMPLE"
+                            <li class="list-group-item ">Edit your document by using the textarea</li>
+                            <li class="list-group-item ">Select the model by clicking on the dropdown menu (for
+                                "classifier_date": requires a reference date, for "heideltime" models a "mode" is required)
+                            </li>
+                            <li class="list-group-item ">Choose the types (date, set, duration, time) to
+                                be processed by toggling them (also filter the types dynamically after tagging)
+                            </li>
+                            <li class="list-group-item ">Start processing by clicking on "TAG"</li>
+                            <li class="list-group-item ">Reset or download the tagged document by clicking on
+                                "RESET" or "DOWNLOAD" / return to document view by clicking on "&lt;BACK"
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="flush-headingTwo">
+                    <button class="accordion-button collapsed " type="button"
+                            data-coreui-toggle="collapse"
+                            data-coreui-target="#flush-collapseTwo">
+                        Export (multiple) document(s) (document view)
+                    </button>
+                </h2>
+                <div id="flush-collapseTwo" class="accordion-collapse collapse"
+                     data-coreui-parent="#accordionFlushExample">
+                    <div class="accordion-body ">
+                        <ol class="list-group list-group-numbered">
+                            <li class="list-group-item ">Create new documents by clicking on "CREATE"
+                            </li>
+                            <li class="list-group-item ">Edit the documents in the editor view by clicking on
+                                "OPEN"
+                            </li>
+                            <li class="list-group-item ">Select the documents to be processed by checking the checkbox in the same row
+
+                            </li>
+                            <li class="list-group-item">Select the model by clicking on the dropdown menu(
+                                "classifier_date": requires a reference date, for "heideltime" models a "mode" is required)
+                            </li>
+                            <li class="list-group-item">Choose the types (date, set, duration, time) to
+                                be exported by toggling them
+                            </li>
+                            <li class="list-group-item ">Start exporting by clicking on "EXPORT", the format of the output files is TIMEML/XML.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="flush-headingThree">
+                        <button class="accordion-button collapsed " type="button"
+                                data-coreui-toggle="collapse"
+                                data-coreui-target="#flush-collapseThree">
+                            Tagging models
+                        </button>
+                    </h2>
+                <div id="flush-collapseThree" class="accordion-collapse collapse"
+                     data-coreui-parent="#accordionFlushExample">
+                    <div class="accordion-body ">
+                        <ol class="list-group list-group-numbered">
+                            <li class="list-group-item "><b>Classifiers:</b> transfomer-based tagging models, consisting of three models for English (EN)  and one for German (DE).
+                                <a href="https://huggingface.co/satyaalmasian/temporal_tagger_German_GELECTRA">German model (Classifier_DE)</a> is token classifier based on GELECTRA.
+                                <a href="https://huggingface.co/satyaalmasian/temporal_tagger_BERT_tokenclassifier">Classifier_EN</a> is also a token classifier based on BERT,
+                                <a href="https://huggingface.co/satyaalmasian/temporal_tagger_BERTCRF_tokenclassifier">Classifier_CRF</a>  is an extension of BERT classifier based with additional CRF layer.
+                                The <a href="https://huggingface.co/satyaalmasian/temporal_tagger_DATEBERT_tokenclassifier">Classifier_DATE</a>  additionally takes the reference date of the document as input and appends
+                                it to token embeddings.
+                            </li>
+                            <li class="list-group-item ">
+                                <b>HeidelTime:</b> we include the <a href="https://github.com/PhilipEHausner/python_heideltime"> python wrapper of HeidelTime</a> to our system.
+                                HeidelTime is a rule-based system, automatically extended to many languages. We include the German and English tagger from HeidelTime.
+                            </li>
+                            <li class="list-group-item ">
+                                <b>SUTime:</b> is a rule-based temporal tagger built on regular
+                                expression patterns and is available as a library for temporal annotations from <a href="https://nlp.stanford.edu/software/sutime.shtml">StandfordNLP</a>.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<footer class="footer bg-white shadow">
+    <div>
+        <span>Database Research Group, Heidelberg University</span>
+        <span>&copy; 2022</span>
+    </div>
+</footer>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@coreui/coreui@4.1.0/dist/js/coreui.bundle.min.js"
+        integrity="sha384-17pOXfLH6r4tWshLBlj6J41DVqNMt9ECaHytAUXMqZBhdFi4lxRuCPJBiB9O8FVl"
+        crossorigin="anonymous"></script>
+
+<script src="{{ url_for('static', filename='js/jszip.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/FileSaver.js') }}"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
