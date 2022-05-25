@@ -19,7 +19,8 @@ The input is a raw text, where the paragraphs are seperated by `\n`. The output 
 ## Installation:
 Start with the requirements for Python by running `python3 -m pip install -r requirements.txt` from the project root folder.
 You need to manually install the python wrapper for [HeidelTime](https://github.com/PhilipEHausner/python_heideltime/) 
-and additional Java dependencies for [SUTime](https://github.com/FraBle/python-sutime) from their respective Github repositories.  
+and additional Java dependencies for [SUTime](https://github.com/FraBle/python-sutime) from their respective Github repositories.
+In both cases, you might need to install additional languages manually to ensure full support.
 For HeidelTime, after cloning the Python wrapper's repository, run
 ```bash
 chmod +x install_heideltime_standalone.sh
@@ -40,7 +41,7 @@ python main.py --port PORT_NUMBER
 
 This will start a server on localhost, port `PORT_NUMBER`. The default port is set to `8001`.
 
-## Send a request:
+## Querying the API
 
 The requests can be sent using `http://localhost:PORT_NUMBER/time_tag`
 Note that this has to be a `POST` request, and not a simle `GET` request.  
@@ -50,28 +51,31 @@ The request parameters are as follows (in JSON):
 {
 "model_type": "type of the model used for temporal tagging (see below for options)",
 "input": "the text input, where paragraphs are separated by \n",
+"language": "the language in which the text is in",
 "date": "the creation date of the document"
 }
 ```
 
-`model_type` can take 7 values and contains Transformer-based models for English and German, 
-[HeidelTime](https://github.com/HeidelTime/heideltime) (English and German) form the [python wrapper](https://github.com/PhilipEHausner/python_heideltime) 
-and [SUTime](https://github.com/FraBle/python-sutime) (English only for now).
+`model_type` can take different values, depending on the model architecture you want to use.
+Each of the models also supports a different number of languages, so please make sure to check out the individual wrappers.
 
+### Transformer-based Token Classifiers
 Token classifiers have the prefix of `Classifier`. The model choices are:
 
-* `Classifier_EN`
-* `Classifier_DATE_EN`
-* `Classifier_CRF_EN`
-* `Classifier_DE`
+* `Classifier`
+* `Classifier_DATE`
+* `Classifier_CRF`
 
-For the model `Classifier_DATE_EN` there should be an additional parameter provided, 
+The base `Classifier` is available in German (`DE`) and English (`EN`), all other transformer-based models are only for English.
+
+For the model `Classifier_DATE` there should be an additional parameter provided, 
 specifying the date of the document in this format: `yyyy-mm-dd`.
 Two examples are as follows:
 
 ```
 {
-"model_type": "Classifier_EN",
+"model_type": "Classifier",
+"language": "EN",
 "input": "today is sunny\n tomorrow will be windy\n tomorrow is 5th of November",
 }
 ```
@@ -80,48 +84,56 @@ Or:
 
 ```
 {
-"model_type": "Classifier_DATE_EN",
+"model_type": "Classifier_DATE",
+"language": "EN",
 "input": "today is sunny\n tomorrow will be windy\n tomorrow is 5th of November",``
 "date": "2020-02-02"
 }
 ```
 
+### HeidelTime
+**HeidelTime** has similar input and output. The model choices are more varied: 
 
-**HeidelTime** has similar input and output. The model choices are: 
+* `HeidelTime_NARRATIVE`
+* `HeidelTime_SCIENTIFIC`
+* `HeidelTime_COLLOQUIAL`
+* `HeidelTime_NEWS`
 
-* `HeidelTime_EN_NARRATIVE`
-* `HeidelTime_DE_NARRATIVE`
-* `HeidelTime_EN_SCIENTIFIC`
-* `HeidelTime_DE_SCIENTIFIC`
-* `HeidelTime_EN_COLLOQUIAL`
-* `HeidelTime_DE_COLLOQUIAL`
-* `HeidelTime_EN_NEWS`
-* `HeidelTime_DE_NEWS`
-
-Where the final part of the model name specifies the text's domain for HeidelTime.
-All modes are available for both English and German.
+If you only provide `HeidelTime`, the default processing mode will be `NARRATIVE`.
+Generally, the following languages are included for HeidelTime: English, German, Dutch, Spanish, Italian, French, Estonian and Portuguese.
+Some of the modes (`SCIENTIFIC` and `COLLOQUIAL`) were only designed for English, and might thus not work with other languages.
 HeidelTime also allows the inclusion of  reference date and one can also specify using the date argument: 
 
 ```
 {
-"model_type": "Classifier_DATE_EN",
-"input": "today is sunny\n tomorrow will be windy\n tomorrow is 5th of November",``
-"date":"2020-02-02"
+"model_type": "Heideltime",
+"language": "EN",
+"input": "today is sunny\n tomorrow will be windy\n tomorrow is 5th of November",
+"date": "2020-02-02"
 }
 ```
 without the specification of the date, the model automatically assumes today's date as the reference. 
 
-**SUTime** does not differentiate between any domain, and is currently only available in our API for English.
+
+### SUTime
+**SUTime** does not differentiate between any domain, and is currently only available in our API for English and Spanish.
 SUTime also allows the inclusion of a reference date, and will similarly default to today as the reference date if left unspecified.
 The model choices are:
 
-* `SUTime_EN`
+* `SUTime`
 
+### Timexy
+We also support the spaCy extension [**Timexy**](https://github.com/paulrinckens/timexy),
+however, we cannot guarantee for the performance of this particular package.
+It is available for English, German and French. The usage is the same as for the simple `Classifier` models,
+and further specifications of the reference date does not help.
+
+### Response Structure
 The output of all models is XML-like tagged text, for example:
 
 ```
 {
-"tagged_text": " <TIMEX3 tid=\"t2\" type=\"DATE\" value=\"2015-03-23\">Today</TIMEX3> is sunny\n  <TIMEX3 tid=\"t2\" type=\"DATE\" value=\"2013-03-23\">Tomorrow</TIMEX3> will be windy\n  <TIMEX3 tid=\"t2\" type=\"DATE\" value=\"2013-11-01\">Tomorrow</TIMEX3> is a public holiday."
+"tagged_text": " <TIMEX3 tid=\"t1\" type=\"DATE\" value=\"2015-03-23\">Today</TIMEX3> is sunny\n  <TIMEX3 tid=\"t2\" type=\"DATE\" value=\"2013-03-23\">Tomorrow</TIMEX3> will be windy\n  <TIMEX3 tid=\"t3\" type=\"DATE\" value=\"2013-11-01\">Tomorrow</TIMEX3> is a public holiday."
 }
 ```
 

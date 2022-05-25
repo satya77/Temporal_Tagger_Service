@@ -7,7 +7,7 @@ from functools import lru_cache
 import spacy
 from timexy import Timexy
 
-TIMEXY_LANGUAGES = {"en", "es", "de"}
+TIMEXY_LANGUAGES = {"en", "fr", "de"}
 
 
 def get_spacy_model(model_name: str) -> spacy.language.Language:
@@ -17,11 +17,11 @@ def get_spacy_model(model_name: str) -> spacy.language.Language:
 @lru_cache(maxsize=4)
 def get_timexy_model(language: str) -> spacy.language.Language:
     if language == "de":
-        model = "de_core_web_sm"
-    elif language == "en":
         model = "de_core_news_sm"
-    elif language == "es":
-        model = ""
+    elif language == "en":
+        model = "en_core_web_sm"
+    elif language == "fr":
+        model = "fr_core_news_sm"
     else:
         raise ValueError(f"Unsupported language '{language}' for Timexy supplied!")
     nlp = get_spacy_model(model)
@@ -35,7 +35,7 @@ def get_timexy_model(language: str) -> spacy.language.Language:
     return nlp
 
 
-timexy_cache = {"en": get_timexy_model("en"), "de": get_timexy_model("de"), "es": get_timexy_model("es")}
+timexy_cache = {"en": get_timexy_model("en"), "de": get_timexy_model("de"), "fr": get_timexy_model("fr")}
 
 
 @lru_cache(maxsize=24)
