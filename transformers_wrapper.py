@@ -74,7 +74,7 @@ def transformer_prediction(texts: List[str], language: str, classifier_type: str
         elif classifier_type == "crf" and language == "en":
             processed_text["inference_mode"] = True
             model_name = "classifier_crf_en"
-        elif classifier_type == "de":
+        elif classifier_type == "classifier" and language == "de":
             model_name = "classifier_de"
         else:
             return {"tagged_text": f"Error: Unrecognized combination of model type '{classifier_type}' and "
