@@ -1,0 +1,99 @@
+:root{
+    --date-color: 65, 179, 163;
+    --set-color: 195, 141, 158;
+    --duration-color: 131,178,203;
+    --time-color: 226, 125, 96;
+}
+
+html {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    height: 100%;
+}
+
+.date, .date *, .set, .set *, .duration, .duration *, .time, .time * { transition: all .25s !important; }
+
+.date { border-bottom: 3px solid rgba(var(--date-color), .95) !important;
+    padding-left: 0.25rem;
+    padding-top: 0.25rem;
+    padding-right: 0.25rem;}
+.date[on] { background-color: rgba(var(--date-color), .65) !important; }
+.date > div > i { color: rgba(var(--date-color), .65); }
+.set { border-bottom: 3px solid rgba(var(--set-color), .95) !important;
+    padding-left: 0.25rem;
+    padding-top: 0.25rem;
+    padding-right: 0.25rem;}
+.set[on] { background-color: rgba(var(--set-color), .65) !important; }
+.set > div > i { color: rgba(var(--set-color), .65); }
+.duration { border-bottom: 3px solid rgba(var(--duration-color), .95) !important;
+    padding-left: 0.25rem;
+    padding-top: 0.25rem;
+    padding-right: 0.25rem;}
+.duration[on] { background-color: rgba(var(--duration-color), .65) !important; }
+.duration > div > i { color: rgba(var(--duration-color), .65); }
+.time { border-bottom: 3px solid rgba(var(--time-color), .95) !important;
+    padding-left: 0.25rem;
+    padding-top: 0.25rem;
+    padding-right: 0.25rem;}
+.time[on] { background-color: rgba(var(--time-color), .65) !important; }
+.time > div > i { color: rgba(var(--time-color), .65); }
+
+.date_container, .date_container *, .set_container, .set_container *, .duration_container, .duration_container *, .time_container, .time_container * { transition: all .25s !important; }
+
+.date_container { border-bottom: 2px solid rgba(var(--date-color), .95) !important; }
+.date_container[on] { background-color: rgba(var(--date-color), .65) !important; }
+.date_container > div > i { color: rgba(var(--date-color), .65); }
+.set_container { border-bottom: 2px solid rgba(var(--set-color), .95) !important; }
+.set_container[on] { background-color: rgba(var(--set-color), .65) !important; }
+.set_container > div > i { color: rgba(var(--set-color), .65); }
+.duration_container { border-bottom: 2px solid rgba(var(--duration-color), .95) !important; }
+.duration_container[on] { background-color: rgba(var(--duration-color), .65) !important; }
+.duration_container > div > i { color: rgba(var(--duration-color), .65); }
+.time_container { border-bottom: 2px solid rgba(var(--time-color), .95) !important; }
+.time_container[on] { background-color: rgba(var(--time-color), .65) !important; }
+.time_container > div > i { color: rgba(var(--time-color), .65); }
+
+
+#date:not([show]), #set:not([show]), #duration:not([show]), #time:not([show]) { border-bottom: 2px solid #4f5d73 !important; }
+
+#date[show] { color: rgba(var(--date-color)) !important;
+    border-bottom: 5px solid rgba(var(--date-color), .95) !important; }
+#date:hover[show] { color:white !important;
+    background-color: rgba(var(--date-color), .65) !important; }
+#set[show] {color: rgba(var(--set-color))!important;
+    border-bottom: 5px solid rgba(var(--set-color), .95) !important; }
+#set[show]:hover { color:white !important;
+    background-color: rgba(var(--set-color), .65) !important; }
+#duration[show] {color: rgba(var(--duration-color))!important;
+    border-bottom: 5px solid rgba(var(--duration-color), .95) !important; }
+#duration[show]:hover { color:white !important;
+    background-color: rgba(var(--duration-color), .65) !important; }
+#time[show] { color: rgba(var(--time-color))!important;
+    border-bottom: 5px solid rgba(var(--time-color), .95) !important; }
+#time[show]:hover { color:white !important;
+    background-color: rgba(var(--time-color), .65) !important; }
+
+
+.form-check-input:checked { background-color: #f9b115b0 !important; }
+.dropdown-item.active, .dropdown-item:active { background-color: #f9b115b0 !important; }
+
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, .50);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(128, 128, 128, .55);
+}
+.ml-2
+{
+    margin-left: 2rem;
+}
