@@ -49,8 +49,6 @@ def process():
         if text:
             if text == '':
                 return 'The input is empty.', 500
-            # elif detect(text) not in ['en','de']:
-            #     return 'Unsupported language (English and German only).', 500
             else:
                 request.json['input'] = text
                 tagged_text = requests.post(temporal_api_host + '/time_tag', request.json).json()['tagged_text']
@@ -61,8 +59,6 @@ def process():
     except (etree.XMLSyntaxError, etree.ParseError):
         if request.json['input'] == '':
             return 'the input is empty.', 500
-        # if detect(request.json['input'])  not in ['en','de']:
-        #     return 'Unsupported language (English and German only).', 500
 
         result = json.loads(requests.post(temporal_api_host + '/time_tag', request.json).text)
         print(result)
