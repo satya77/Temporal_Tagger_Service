@@ -4,14 +4,9 @@ import os
 
 import requests
 from flask import render_template, request
-from langdetect import DetectorFactory
-from langdetect import detect
 from lxml import etree
 
 from app import app
-
-DetectorFactory.seed = 0
-detect('init')
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -41,9 +36,6 @@ def process():
             return 'Reference date is missing.', 500
         except ValueError:
             return 'The format of the date input is incorrect!', 500
-    if request.json['model_type'].startswith("HeidelTime"):
-        if request.json['model_type'].split("_")[1] not in ["NEWS", "NARRATIVES", "SCIENTIFIC", "COLLOQUIAL"]:
-            return 'Please choose a mode for the HeidelTime model.', 500
     if 'date' in request.json:
         if request.json['date'] == "--":
             request.json['date'] = None
