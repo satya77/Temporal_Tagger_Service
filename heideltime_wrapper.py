@@ -11,7 +11,6 @@ heideltime_cache = {"heideltime": Heideltime()}
 LANGUAGE_MAPPING = {"en": "ENGLISH", "de": "GERMAN", "es": "SPANISH", "it": "ITALIAN", "fr": "FRENCH",
                     "nl": "DUTCH", "et": "ESTONIAN", "pt": "PORTUGUESE"}
 HEIDELTIME_LANGUAGES = set(LANGUAGE_MAPPING.keys())
-AVAILABLE_MODES = {"COLLOQUIAL", "SCIENTIFIC", "NEWS", "NARRATIVE"}
 
 
 @lru_cache(maxsize=24)

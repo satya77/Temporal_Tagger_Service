@@ -63,7 +63,7 @@ class TimeTag(Resource):
                 return unsupported_language_response(args["model_type"], HEIDELTIME_LANGUAGES)
 
             if len(args["model_type"].split("_")) > 1:
-                heideltime_mode = args["model_type"].split("_")[1]
+                heideltime_mode = args["model_type"].split("_")[1].upper()
             else:
                 # If no mode is specified, default to NARRATIVES as per Heideltime docs
                 heideltime_mode = "NARRATIVES"
